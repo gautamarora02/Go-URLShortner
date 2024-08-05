@@ -37,12 +37,12 @@ var urlDB = make(map[string]URL)
 func generateShortURL(OrignalURL string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(OrignalURL))
-	fmt.Println("hasher: ", hasher)
+	// fmt.Println("hasher: ", hasher)
 	data := hasher.Sum(nil)
 	hash := hex.EncodeToString(data)
 	hash = hash[:8]
-	fmt.Println(hash)
-	fmt.Println(data)
+	// fmt.Println(hash)
+	// fmt.Println(data)
 	return hash
 }
 
@@ -104,7 +104,7 @@ func main() {
 	fmt.Println("Server starting on port 3000!!")
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/shortner", URLshortner)
-	http.HandleFunc("/redirect", redirectURL)
+	http.HandleFunc("/redirect/", redirectURL)
 	// http.ListenAndServe :: return an error and takes two input, port number and handler func
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
