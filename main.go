@@ -6,6 +6,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -45,7 +46,7 @@ func generateShortURL(OrignalURL string) string {
 	return hash
 }
 
-func CreateURL(OrignalURL string) {
+func CreateURL(OrignalURL string) string {
 	hash := generateShortURL(OrignalURL)
 	urlDB[hash] = URL{
 		ID:           hash,
@@ -53,6 +54,7 @@ func CreateURL(OrignalURL string) {
 		CreationDate: time.Now(),
 		ShortURL:     hash,
 	}
+	return hash
 }
 
 func getURL(id string) (URL, error) {
@@ -63,11 +65,46 @@ func getURL(id string) (URL, error) {
 	return url, nil
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello World!")
+}
+
+func URLshortner(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		URL string `json:"url"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	shortner := CreateURL(data.URL)
+	// fmt.Fprint(w, shortner)
+	w.Header().Set("Content-Type", "application/json")
+	var response struct {
+		ShortURL string `json:"url"`
+	}
+	response.ShortURL = shortner
+	json.NewEncoder(w).Encode(response)
+}
+
+func redirectURL(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/redirect/"):]
+	url, err := getURL(id)
+	if err != nil {
+		http.Error(w, "Invalid Request", http.StatusNotFound)
+	}
+	http.Redirect(w, r, url.OrignalURL, http.StatusFound)
+}
+
 func main() {
 	fmt.Println("Starting url shortner!!")
-	OrignalURL := "https://google.com"
-	generateShortURL(OrignalURL)
+	// OrignalURL := "https://google.com"
+	// generateShortURL(OrignalURL)
 	fmt.Println("Server starting on port 3000!!")
+	http.HandleFunc("/", handler)
+	http.HandleFunc("/shortner", URLshortner)
+	http.HandleFunc("/redirect", redirectURL)
 	// http.ListenAndServe :: return an error and takes two input, port number and handler func
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
